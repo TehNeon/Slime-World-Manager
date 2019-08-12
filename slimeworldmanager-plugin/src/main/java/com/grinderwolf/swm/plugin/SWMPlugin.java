@@ -28,6 +28,7 @@ import com.grinderwolf.swm.plugin.world.WorldUnlocker;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -84,8 +85,17 @@ public class SWMPlugin extends JavaPlugin implements SlimePlugin {
         getServer().getPluginManager().registerEvents(new WorldUnlocker(), this);
 
         for (SlimeWorld world : worlds) {
-            if (Bukkit.getWorld(world.getName()) == null) {
+            final World bukkitWorld = Bukkit.getWorld(world.getName());
+            if (bukkitWorld == null) {
                 generateWorld(world);
+            } else {
+                if (getServer().unloadWorld(bukkitWorld, false)) {
+                    // If we successfully unload the world we should allow SWM to continue
+                    generateWorld(world);
+                } else {
+                    // We failed to unload the world, either the world is the primary world, has players somehow, or WorldLoadEvent was set to cancel
+                    Logging.warning("Failed to swap Bukkit world " + bukkitWorld.getName() + " with Slime world");
+                }
             }
         }
 
